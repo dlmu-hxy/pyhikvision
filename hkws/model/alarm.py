@@ -1,9 +1,13 @@
-# 硬件产品预警布放相关
+"""
+此文件用来处理预警布放
+"""
 from hkws.core.type_map import *
 
 
-# 报警设备信息结构体
 class NET_DVR_ALARMER(Structure):
+    """
+    报警设备信息结构体
+    """
     _fields_ = [
         ("byUserIDValid", h_BYTE),
         ("bySerialValid", h_BYTE),
@@ -26,8 +30,11 @@ class NET_DVR_ALARMER(Structure):
     ]
 
 
-# 布防
+
 class NET_DVR_SETUPALARM_PARAM(Structure):
+    """
+    布防
+    """
     _fields_ = [
         ("dwSize", h_DWORD),
         ("beLevel", h_BYTE),

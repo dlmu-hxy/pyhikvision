@@ -1,3 +1,6 @@
+"""
+此文件用于将python数据类型和c数据类型进行匹配
+"""
 import sys
 from ctypes import *
 

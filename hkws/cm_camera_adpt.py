@@ -1,21 +1,24 @@
+"""
+此类用于实现摄像头相关功能
+"""
 from hkws.base_adapter import BaseAdapter
 from hkws.core.type_map import *
 from hkws.model import camera
 
 
-# 摄像器适配器
 class CameraAdapter(BaseAdapter):
+    """
+    摄像器适配器
+    """
 
-    # 启动摄像头实时视频预览
     def start_preview(self, hPlayWnd, cbFunc, userId=0):
         """
-
-        :param hPlayWnd:窗口句柄（用于显示视频画面的GUI窗口）
-        :param cbFunc:实时数据回调函数，接收视频流数据
-        :param userId:登录设备的用户ID，默认为0
-        :return:
+        启动摄像头实时视频预览
+        :param hPlayWnd: 窗口句柄（用于显示视频画面的GUI窗口）
+        :param cbFunc: 实时数据回调函数，接收视频流数据
+        :param userId: 登录设备的用户ID，默认为0
+        :return: 当前预览句柄 lRealPlayHandle，-1表示失败，其他值作为NET_DVR_StopRealPlay等函数的句柄参数
         """
-        # camera为自定义模块
         req = camera.NET_DVR_PREVIEWINFO()
         req.hPlayWnd = hPlayWnd
         req.lChannel = 1  # 预览通道号
@@ -28,6 +31,7 @@ class CameraAdapter(BaseAdapter):
         # 这个回调函数不适合长时间占用
         # fRealDataCallBack_V30 = preview.REALDATACALLBACK
 
+        # lRealHandle为当前预览句柄
         lRealPlayHandle = self.call_cpp(
             "NET_DVR_RealPlay_V40", userId, struPlayInfo, cbFunc, None
 
@@ -39,8 +43,12 @@ class CameraAdapter(BaseAdapter):
             self.sdk_clean()
         return lRealPlayHandle
 
-    # 停止预览
     def stop_preview(self, lRealPlayHandle):
+        """
+        停止预览
+        :param lRealPlayHandle: 当前预览句柄
+        :return:
+        """
         self.call_cpp("NET_DVR_StopRealPlay", lRealPlayHandle)
 
     # def callback_real_data(self, lRealPlayHandle: c_long, cbFunc: g_real_data_call_back, dwUser: c_ulong):
@@ -57,6 +65,13 @@ class CameraAdapter(BaseAdapter):
         return result
 
     def callback_standard_data(self, lRealPlayHandle, cbFunc, dwUser):
+        """
+        注册回调函数，捕获实时码流数据（标准码流）
+        :param lRealPlayHandle: 当前的预览句柄
+        :param cbFunc: 标准码流回调函数
+        :param dwUser: 用户数据
+        :return: True or False
+        """
         result = self.call_cpp(
             "NET_DVR_SetStandardDataCallBack", lRealPlayHandle, cbFunc, dwUser
         )
@@ -66,8 +81,12 @@ class CameraAdapter(BaseAdapter):
             )
         return result
 
-    # 设置设备的配置信息
     def set_dvr_config(self, user_id=0):
+        """
+        设置设备的配置信息
+        :param user_id: 用户id
+        :return:
+        """
         stru_pic_param = camera.NET_DVR_JPEGPARA()
         stru_pic_param.wPicSize = 5
         stru_pic_param.wPicQuality = 1
@@ -142,3 +161,10 @@ class CameraAdapter(BaseAdapter):
         if not set_dvr_result:
             self.print_error("NET_DVR_SetDVRConfig 启动预览失败: the error code is ")
         return set_dvr_result
+
+    # todo:云台控制函数
+    def ptz_control(self, lRealPlayHandle, dwPTZCommand, dwStop):
+        self.lRealHandle = lRealPlayHandle
+        self.dwPTZCommand = dwPTZCommand
+        self.dwStop = dwStop
+        self.call_cpp("NET_DVR_PTZControl", lRealPlayHandle, dwPTZCommand, dwStop)

@@ -1,27 +1,31 @@
-# 读取.ini配置文件
 import configparser
-
 from hkws.core import env
 
-# 定义配置文件类
-class Config:
-    SDKPath = ""
-    User = "admin"
-    Password = "jqf64078"
-    Port = 8000
-    IP = "192.168.1.64"
-    Suffix = ".so"              # 文件后缀
 
-    # 定义读取.ini配置文件的方法：从指定的配置文件路径加载配置
-    def InitConfig(self, path):
+class Config:
+    """
+    配置文件类
+    """
+    sdk_path = ""
+    user = "admin"
+    password = "jqf64078"
+    port = 8000
+    ip = "192.168.1.64"
+    suffix = ".so"
+
+    def init_config(self, path):
+        """
+        初始化配置文件
+        :param path: 配置文件路径
+        :return:
+        """
         cnf = configparser.ConfigParser()
         cnf.read(path)
-        self.SDKPath = cnf.get("DEFAULT", "SDKPath")
-        self.User = cnf.get("DEFAULT", "User")
-        self.Password = cnf.get("DEFAULT", "Password")
-        self.Port = cnf.getint("DEFAULT", "Port")
-        self.IP = cnf.get("DEFAULT", "IP")
-        # 根据操作系统设置文件后缀
-        if env.isWindows():
-            self.Suffix = ".dll"
+        self.sdk_path = cnf.get("DEFAULT", "sdk_path")
+        self.user = cnf.get("DEFAULT", "user")
+        self.password = cnf.get("DEFAULT", "password")
+        self.port = cnf.getint("DEFAULT", "port")
+        self.ip = cnf.get("DEFAULT", "ip")
+        if env.is_windows():
+            self.suffix = ".dll"
         return

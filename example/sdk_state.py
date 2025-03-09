@@ -15,9 +15,9 @@ from hkws import base_adapter, config
 # 初始化配置文件
 cnf = config.Config()
 path = os.path.join('../local_config.ini')
-cnf.InitConfig(path)
-if env.isWindows():
-    os.chdir(cnf.SDKPath)
+cnf.init_config(path)
+if env.is_windows():
+    os.chdir(cnf.sdk_path)
 
 # 初始化SDK适配器
 adapter = base_adapter.BaseAdapter()
@@ -26,7 +26,7 @@ if userId < 0:
     logging.error("初始化Adapter失败")
     os._exit(0)
 
-print("Login successful,the userId is ", userId)
+print("Login successful,the user_id is ", userId)
 v = adapter.get_sdk_version()
 print("version:", v)
 bv = adapter.get_sdk_build_version()

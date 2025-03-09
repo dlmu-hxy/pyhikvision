@@ -1,9 +1,13 @@
-# 硬件产品人像相关
+"""
+此文件用来处理人像
+"""
 from hkws.core.type_map import *
 
 
-# 人体属性参数结构体。
 class NET_VCA_HUMAN_FEATURE(Structure):
+    """
+    人体属性参数结构体
+    """
     _fields_ = [
         ("byAgeGroup", h_BYTE),
         ("bySex", h_BYTE),
@@ -21,18 +25,24 @@ class NET_VCA_HUMAN_FEATURE(Structure):
     ]
 
 
-# 点坐标参数结构体
 class NET_VCA_POINT(Structure):
+    """
+    点坐标参数结构体
+    """
     _fields_ = [("fX", h_FLOAT), ("fY", h_FLOAT)]
 
 
-# 多边形结构体
 class NET_VCA_POLYGON(Structure):
+    """
+    多边形结构体
+    """
     _fields_ = [("dwPointNum", h_DWORD), ("struPos", NET_VCA_POINT * 4)]
 
 
-# 区域框参数结构体。
 class NET_VCA_RECT(Structure):
+    """
+    区域框参数结构体
+    """
     _fields_ = [
         ("fX", h_FLOAT),
         ("fY", h_FLOAT),
@@ -41,8 +51,10 @@ class NET_VCA_RECT(Structure):
     ]
 
 
-# 尺寸过滤器参数结构体
 class NET_VCA_SIZE_FILTER(Structure):
+    """
+    尺寸过滤器参数结构体
+    """
     _fields_ = [
         ("byActive", h_BYTE),
         ("byMode", h_BYTE),
@@ -52,16 +64,20 @@ class NET_VCA_SIZE_FILTER(Structure):
     ]
 
 
-# JPEG图像信息结构体。
 class NET_DVR_JPEGPARA(Structure):
+    """
+    JPEG图像信息结构体
+    """
     _fields_ = [
         ("wPicSize", h_WORD),
         ("wPicQuality", h_WORD),
     ]
 
 
-# 人脸抓拍规则参数（单条）结构体
 class NET_VCA_SINGLE_FACESNAPCFG(Structure):
+    """
+    人脸抓拍规则参数（单条）结构体
+    """
     _fields_ = [
         ("byActive", h_BYTE),
         ("byAutoROIEnable", h_BYTE),
@@ -71,8 +87,10 @@ class NET_VCA_SINGLE_FACESNAPCFG(Structure):
     ]
 
 
-# 人脸抓拍规则参数结构体
 class NET_VCA_FACESNAPCFG(Structure):
+    """
+    人脸抓拍规则参数结构体
+    """
     _fields_ = [
         ("dwSize", h_DWORD),
         ("bySnapTime", h_BYTE),
@@ -95,18 +113,24 @@ class NET_VCA_FACESNAPCFG(Structure):
     ]
 
 
-# 报警目标信息结构体。
 class NET_VCA_TARGET_INFO(Structure):
+    """
+    报警目标信息结构体
+    """
     _fields_ = [("dwID", h_DWORD), ("struRect", NET_VCA_RECT), ("byRes", h_BYTE * 4)]
 
 
-# IP地址结构体。
 class NET_DVR_IPADDR(Structure):
+    """
+    IP地址结构体
+    """
     _fields_ = [("sIpV4", h_CHAR * 16), ("sIpV6", h_BYTE * 128)]
 
 
-# 前端设备信息结构体。
 class NET_VCA_DEV_INFO(Structure):
+    """
+    前端设备信息结构体
+    """
     _fields_ = [
         ("struDevIP", NET_DVR_IPADDR),
         ("wPort", h_WORD),
@@ -115,8 +139,10 @@ class NET_VCA_DEV_INFO(Structure):
     ]
 
 
-# 时间参数结构体
 class NET_DVR_TIME_EX(Structure):
+    """
+    时间参数结构体
+    """
     _fields_ = [
         ("wYear", h_WORD),
         ("byMonth", h_BYTE),
@@ -128,8 +154,10 @@ class NET_DVR_TIME_EX(Structure):
     ]
 
 
-# 人脸抓拍附加信息结构体
 class NET_VCA_FACESNAP_ADDINFO(Structure):
+    """
+    人脸抓拍附加信息结构体
+    """
     _fields_ = [
         ("struFacePicRect", NET_VCA_RECT),
         ("iSwingAngle", h_INT),
@@ -147,8 +175,10 @@ class NET_VCA_FACESNAP_ADDINFO(Structure):
     ]
 
 
-# 人脸抓拍结果结构体。
 class NET_VCA_FACESNAP_RESULT(Structure):
+    """
+    人脸抓拍结果结构体
+    """
     _fields_ = [
         ("dwSize", h_DWORD),
         ("dwRelativeTime", h_DWORD),
@@ -184,8 +214,10 @@ class NET_VCA_FACESNAP_RESULT(Structure):
     ]
 
 
-# 预览参数结构体
 class NET_DVR_PREVIEWINFO(Structure):
+    """
+    预览参数结构体
+    """
     _fields_ = [
         # 通道号，目前设备模拟通道号从1开始，数字通道的起始通道号通过
         # NET_DVR_GetDVRConfig(配置命令NET_DVR_GET_IPPARACFG_V40)获取（dwStartDChan）

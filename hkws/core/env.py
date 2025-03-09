@@ -1,12 +1,14 @@
-# 操作系统判断
+"""
+此文件用来判断当前操作系统
+"""
 import platform
 
-systemPlatFrom = platform.system()
+system_platform = platform.system()
 
 
-def isWindows():
-    return systemPlatFrom == "Windows"
+def is_windows():
+    return system_platform == "Windows"
 
 
-def isLinux():
-    return systemPlatFrom == "Linux"
+def is_linux():
+    return system_platform == "Linux"

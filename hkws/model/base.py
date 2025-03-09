@@ -1,16 +1,24 @@
-# 硬件产品基础结构体定义
-# 包含初始化SDK,用户注册设备等相关结构体
+"""
+此文件用于定义基础结构体
+"""
 from hkws.core.const import *
 from hkws.core.type_map import *
 
 
-# 设置sdk加载路径
 class NET_DVR_LOCAL_SDK_PATH(Structure):
+    """
+    动态库加载路径信息结构体
+    sPath: 动态库地址
+    byRes: 保留
+    """
     _fields_ = [("sPath", h_BYTE * 256), ("byRes", h_BYTE * 128)]
 
 
-# 登录参数结构体，NET_DVR_Login_V40()参数
+
 class NET_DVR_USER_LOGIN_INFO(Structure):
+    """
+    用户登录参数结构体
+    """
     _fields_ = [
         ("sDeviceAddress", h_BYTE * 129),  # 设备地址，IP或者普通域名
         ("byUseTransport", h_BYTE),  # 是否启用能力透传 0：不启动，默认  1：启动
@@ -42,8 +50,10 @@ class NET_DVR_USER_LOGIN_INFO(Structure):
     ]
 
 
-# 设备参数结构体。
 class NET_DVR_DEVICEINFO_V30(Structure):
+    """
+    设备参数结构体_V30
+    """
     _fields_ = [
         ("sSerialNumber", h_BYTE * 48),  # 序列号
         ("byAlarmInPortNum", h_BYTE),  # 模拟报警输入个数
@@ -129,6 +139,9 @@ class NET_DVR_DEVICEINFO_V30(Structure):
 
 
 class NET_DVR_DEVICEINFO_V40(Structure):
+    """
+    设备参数结构体_V40
+    """
     _fields_ = [
         ("struDeviceV30", NET_DVR_DEVICEINFO_V30),  # 设备参数
         (
@@ -157,23 +170,36 @@ class NET_DVR_DEVICEINFO_V40(Structure):
 
 
 class NET_DVR_Login_V40(Structure):
+    """
+    用户注册设备结构体
+    pLoginInfo: 登录参数，包括设备地址、登录用户、密码等
+    lpDeviceInfo:设备信息
+    """
     _fields_ = [
         ("pLoginInfo", NET_DVR_USER_LOGIN_INFO),
         ("lpDeviceInfo", NET_DVR_DEVICEINFO_V40),
     ]
 
 
-# 设备激活参数结构体
 class NET_DVR_ACTIVATECFG(Structure):
+    """
+    设备激活参数结构体
+    dwSize: 结构体大小
+    sPassword: 初始密码
+    byRes: 保留
+    """
     _fields_ = [
-        ("dwSize", h_DWORD),  # 结构体大小
+        ("dwSize", h_DWORD),
         ("sPassword", h_BYTE * PASSWD_LEN),
         ("byRes", h_BYTE * 108),
     ]
 
 
-# SDK状态信息结构体
+
 class NET_DVR_SDKSTATE(Structure):
+    """
+    SDK状态信息结构体
+    """
     _fields_ = [
         ("dwTotalLoginNum", h_DWORD),  # 当前注册用户数
         ("dwTotalRealPlayNum", h_DWORD),  # 当前实时预览的路数
@@ -190,8 +216,10 @@ class NET_DVR_SDKSTATE(Structure):
     ]
 
 
-# SDK功能信息结构体
 class NET_DVR_SDKABL(Structure):
+    """
+    SDK功能信息结构体
+    """
     _fields_ = [
         ("dwMaxLoginNum", h_DWORD),  # 最大注册用户数
         ("dwMaxRealPlayNum", h_DWORD),  # 最大实时预览的路数
@@ -207,11 +235,16 @@ class NET_DVR_SDKABL(Structure):
         (" dwRes", h_DWORD * 10),  # 保留，置为0
     ]
 
-
-# 自己写:云台控制参数结构体
+# todo
 class NET_DVR_PTZControl(Structure):
+    """
+    云台控制参数结构体
+    lRealHandle: 当前预览句柄，NET_DVR_RealPlay或NET_DVR_RealPlay_V30的返回值
+    dwPTZCommand: 云台控制命令
+    dwStop: 云台停止动作或开始动作：0－开始，1－停止
+    """
     _fields_ = [
-        ("lRealHandle",h_LONG),
-        ("dwPTZCommand",h_DWORD),
-        ("dwStop",h_DWORD),
+        ("lRealHandle", h_LONG),
+        ("dwPTZCommand", h_DWORD),
+        ("dwStop", h_DWORD),
     ]

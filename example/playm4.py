@@ -16,9 +16,9 @@ from hkws.core.type_map import h_DWORD
 # 初始化配置文件
 cnf = config.Config()
 path = os.path.join('../local_config.ini')
-cnf.InitConfig(path)
-if env.isWindows():
-    os.chdir(cnf.SDKPath)
+cnf.init_config(path)
+if env.is_windows():
+    os.chdir(cnf.sdk_path)
 
 # 初始化SDK适配器
 adapter = playm4_adpt.PlayM4()

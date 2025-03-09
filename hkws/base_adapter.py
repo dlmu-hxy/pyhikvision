@@ -6,40 +6,54 @@ from hkws.config import Config
 from hkws.model import base, alarm
 
 
-# from hkws import cm_camera_adpt
-
-
-# 海康威视基础类
-
 class BaseAdapter:
+    """
+    海康威视基础类
+    """
     # 动态sdk文件 .so .dll
-    so_list = []  # 存储加载的SDK动态库文件路径
+    so_list = []  # 动态库列表
 
-    def set_lib(self, so_list: []):  # 设置动态库文件列表
+    def set_lib(self, so_list: []):
+        """
+        初始化动态库列表
+        :param so_list: 动态库列表
+        :return:
+        """
         self.so_list = so_list
 
-    def get_lib(self):  # 获取当前加载的动态库文件列表
+    def get_lib(self):
+        """
+        获取动态库列表
+        :return:
+        """
         return self.so_list
 
-    # 常规启动，初始化SDK到用户注册设备
     def common_start(self, cnf: Config):
+        """
+        启动
+        :param cnf: Config类型
+        :return:
+        """
         userId = -1
-        self.add_lib(cnf.SDKPath, cnf.Suffix)
+        self.add_lib(cnf.sdk_path, cnf.suffix)
         # 加载动态库
         if len(self.so_list) == 0:
             return userId
         if not self.init_sdk():
             return userId
-        userId = self.login(cnf.IP, cnf.Port, cnf.User, cnf.Password)
+        userId = self.login(cnf.ip, cnf.port, cnf.user, cnf.password)
         if userId < 0:
             self.print_error("common_start 失败: the error code is")
         return userId
 
-    # 递归加载目录下所有so文件
     def add_lib(self, path, suffix):
-        files = os.listdir(path)
-        # 使用os.listdir(path)获取目录path中的所有文件和子目录，并将它们存储在files列表中
-
+        """
+        加载动态库文件
+        :param path: 路径
+        :param suffix: 后缀名
+        :return:
+        """
+        files = os.listdir(path)  # 获取path中的所有文件和子目录
         for file in files:
             if not os.path.isdir(path + file):
                 # 当前文件不是目录
@@ -51,18 +65,18 @@ class BaseAdapter:
                 self.add_lib(path + file + "/", suffix)
                 # 当前文件是目录,递归调用add_lib方法,进入该目录继续查找
 
-    # 重点：python调用sdk指定方法，函数名，参数列表
     def call_cpp(self, func_name, *args):
-        # 遍历so_list，尝试加载动态库并调用指定函数
+        """
+        调用动态库函数
+        :param func_name: 动态库函数名
+        :param args: 参数列表
+        :return:
+        """
         for so_lib in self.so_list:
             try:
                 lib = cdll.LoadLibrary(so_lib)
                 try:
-                    """"
-                    使用eval动态生成函数调用，eval将lib.%s中的%s替换为func_name，从而形成如lib.func_name的格式，执行动态库中的函数。
-                    然后，将*args传递给该函数。执行后，返回值赋给value变量。
-                    """
-                    value = eval("lib.%s" % func_name)(*args)
+                    value = eval(f"lib.{func_name}")(*args)  # 动态生成函数调用
                     logging.info("调用的库：" + so_lib)
                     logging.info("执行成功,返回值：" + str(value))
                     return value
@@ -87,8 +101,13 @@ class BaseAdapter:
             self.print_error("NET_DVR_GetLastError 初始化SDK失败: the error code is ")
             return False
 
-    # 设置sdk初始化参数
     def set_sdk_config(self, enumType, sdkPath):
+        """
+        设置sdk初始化参数
+        :param enumType:
+        :param sdkPath:
+        :return:
+        """
         req = base.NET_DVR_LOCAL_SDK_PATH()
         sPath = bytes(sdkPath, "ascii")
         i = 0
@@ -102,32 +121,41 @@ class BaseAdapter:
             self.print_error("NET_DVR_SetSDKInitCfg 启动预览失败: the error code is")
         return res
 
-    # 释放sdk
     def sdk_clean(self):
+        """
+        释放SDK资源，在程序结束之前调用
+        :return:
+        """
         result = self.call_cpp("NET_DVR_Cleanup")
         logging.info("释放资源", result)
 
-    # 设备登录
     def login(self, address="192.168.1.64", port=8000, user="admin", pwd="jqf64078"):
-        # 设置连接时间
-        set_overtime = self.call_cpp("NET_DVR_SetConnectTime", 5000, 4)  # 设置超时
+        """
+        设备登陆
+        :param address: ip地址
+        :param port: 端口号
+        :param user: 用户名
+        :param pwd: 密码
+        :return:
+        """
+        # 设置网络连接超时时间和连接尝试次数
+        set_overtime = self.call_cpp("NET_DVR_SetConnectTime", 5000, 4)
         if not set_overtime:
             self.print_error("NET_DVR_SetConnectTime 设置超时错误信息失败：the error code is ")
             return False
-        # 设置重连
-        self.call_cpp("NET_DVR_SetReconnect", 10000, True)
+        # 设置重连功能
+        self.call_cpp("NET_DVR_SetReconnect", 10000)
 
         b_address = bytes(address, "ascii")
         b_user = bytes(user, "ascii")
         b_pwd = bytes(pwd, "ascii")
 
-        struLoginInfo = base.NET_DVR_USER_LOGIN_INFO()
+        struLoginInfo = base.NET_DVR_USER_LOGIN_INFO()  # 登录参数和设备信息
         struLoginInfo.bUseAsynLogin = 0  # 同步登陆
         i = 0
         for o in b_address:
             struLoginInfo.sDeviceAddress[i] = o
             i += 1
-
         struLoginInfo.wPort = port
         i = 0
         for o in b_user:
@@ -147,13 +175,22 @@ class BaseAdapter:
             self.print_error("NET_DVR_Login_V40 用户登录失败: the error code is ")
         return user_id
 
-    # 设备登出
-    def logout(self, userId=0):
-        result = self.call_cpp("NET_DVR_Logout", userId)
+    def logout(self, user_id=0):
+        """
+        用户注销
+        :param user_id: 用户id
+        :return:
+        """
+        result = self.call_cpp("NET_DVR_Logout", user_id)
         logging.info("登出", result)
 
-    # 设置报警回调函数
     def setup_alarm_chan_v31(self, cbFunc, user_id):
+        """
+        设置报警布防V31
+        :param cbFunc: 回调函数
+        :param user_id: 用户id
+        :return:
+        """
         result = self.call_cpp("NET_DVR_SetDVRMessageCallBack_V31", cbFunc, user_id)
         if result == -1:
             self.print_error(
@@ -161,8 +198,12 @@ class BaseAdapter:
             )
         return result
 
-    # 设置报警布防
     def setup_alarm_chan_v41(self, user_id=0):
+        """
+        设置报警布防V41
+        :param user_id: 用户id
+        :return:
+        """
         structure_l = alarm.NET_DVR_SETUPALARM_PARAM()
         structure_l.dwSize = sizeof(structure_l)
         structure_l.byFaceAlarmDetection = 0
@@ -172,21 +213,33 @@ class BaseAdapter:
             self.print_error("NET_DVR_SetupAlarmChan_V41 报警布防: the error code is ")
         return result
 
-    # 报警撤防
     def close_alarm(self, alarm_result):
+        """
+        报警撤防
+        :param alarm_result:NET_DVR_SetupAlarmChan_V30或者NET_DVR_SetupAlarmChan_V41的返回值
+        :return:
+        """
         return self.call_cpp("NET_DVR_CloseAlarmChan_V30", alarm_result)
 
-    # 获取SDK版本，2个高字节表示主版本，2个低字节表示次版本。如0x00030000：表示版本为3.0。
     def get_sdk_version(self):
+        """
+        获取SDK的版本信息
+        :return:
+        """
         return self.call_cpp("NET_DVR_GetSDKVersion")
 
-    # 获取SDK的版本号和Build信息
-    # SDK的版本号和build信息。2个高字节表示版本号 ：25~32位表示主版本号，17~24位表示次版本号；2个低字节表示build信息。 如0x03000101：表示版本号为3.0，build 号是0101。
     def get_sdk_build_version(self):
+        """
+        获取SDK的版本号
+        :return:
+        """
         return self.call_cpp("NET_DVR_GetSDKBuildVersion")
 
-    # 获取当前SDK状态信息失败
     def get_sdk_state(self):
+        """
+        获取当前SDK状态信息
+        :return:
+        """
         op = base.NET_DVR_SDKSTATE()
         pSDKState = byref(op)
         res = self.call_cpp("NET_DVR_GetSDKState", pSDKState)
@@ -194,8 +247,11 @@ class BaseAdapter:
             self.print_error("NET_DVR_GetSDKState 获取当前SDK状态信息失败: the error code is ")
         return res, op
 
-    # 获取当前SDK的功能信息
     def get_sdk_abl(self):
+        """
+        获取当前SDK的功能信息
+        :return:
+        """
         op = base.NET_DVR_SDKABL()
         pSDKAbl = byref(op)
         res = self.call_cpp("NET_DVR_GetSDKAbility", pSDKAbl)
@@ -215,7 +271,7 @@ class BaseAdapter:
         b_ip = bytes(ip, "ascii")
         b_pwd = bytes(pwd, "ascii")
 
-        input = base.NET_DVR_ACTIVATECFG()  # 实例化结构体对象input
+        input = base.NET_DVR_ACTIVATECFG()
         input.dwSize = sizeof(input)
 
         i = 0
@@ -224,7 +280,7 @@ class BaseAdapter:
             input.sPassword[i] = o
             i += 1
 
-        input_ref = byref(input)  # 获取结构体的指针
+        input_ref = byref(input)
         # 调用SDK函数
         res = self.call_cpp("NET_DVR_ActivateDevice", b_ip, port, input_ref)
         if not res:

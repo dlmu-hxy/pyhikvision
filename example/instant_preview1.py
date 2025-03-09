@@ -22,10 +22,10 @@ sys.path.append(PathProject)
 # 创建Config类对象cnf，使用对象cnf调用Config类中的方法和属性
 cnf = config.Config()
 path = os.path.join('../local_config.ini')
-cnf.InitConfig(path)
+cnf.init_config(path)  # 初始化配置文件路径
 
-if env.isWindows():
-    os.chdir(cnf.SDKPath)
+if env.is_windows():
+    os.chdir(cnf.sdk_path)
 
 # 初始化SDK适配器
 adapter = cm_camera_adpt.CameraAdapter()
@@ -34,44 +34,39 @@ if userId < 0:
     logging.error("初始化Adapter失败")
     os._exit(0)
 
-print("Login successful,the userId is ", userId)
+print("Login successful,the user_id is ", userId)
 
 
+# 实现云台控制
 def click_left():
-    print("clicked button left")
-    # 暂略
+    adapter.ptz_control(lRealPlayHandle, 23, 0)
 
 
 def click_right():
-    print("clicked button right")
+    adapter.ptz_control(lRealPlayHandle, 24, 0)
 
 
 def click_up():
-    print("clicked button up")
+    adapter.ptz_control(lRealPlayHandle, 21, 0)
 
 
 def click_down():
-    print("clicked button down")
+    adapter.ptz_control(lRealPlayHandle, 22, 0)
 
 
 if __name__ == '__main__':
-    # 创建窗口win
     win = tkinter.Tk()
     win.title("hikvision")
-    # 固定窗口大小
     win.resizable(0, 0)
     win.overrideredirect(True)
     sw = win.winfo_screenwidth()
-    # 得到屏幕宽度
     sh = win.winfo_screenheight()
-    # 得到屏幕高度
     ww = 800
     wh = 650
     x = (sw - ww) / 2
     y = (sh - wh) / 2
     win.geometry("%dx%d+%d+%d" % (ww, wh, x, y))
 
-    # 创建一个Canvas，设置其背景色为白色，用于后续绘图
     cv = tkinter.Canvas(win, bg='white', width=ww, height=wh)
     cv.place(x=20, y=10)
 
@@ -116,6 +111,8 @@ if __name__ == '__main__':
 
     btn_q = Button(win, text=' 退出 ', command=win.quit)
     btn_q.place(x=660, y=610)
+
+    # 启动实时预览
     lRealPlayHandle = adapter.start_preview(hwnd, None, userId)
     if lRealPlayHandle < 0:
         adapter.logout(userId)
@@ -125,7 +122,7 @@ if __name__ == '__main__':
     print("start preview 成功", lRealPlayHandle)
     callback = adapter.callback_real_data(lRealPlayHandle, instant_preview1_cb.f_real_data_call_back, userId)
     print("callback", callback)
-    # 主窗口循环显示
+
     win.mainloop()
     adapter.stop_preview(lRealPlayHandle)
     adapter.logout(userId)
