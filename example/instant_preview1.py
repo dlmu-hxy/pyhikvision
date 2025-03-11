@@ -1,23 +1,14 @@
-"""
-实时预览
-"""
+import sys
 import logging
 import os
-import sys
-import tkinter
-from tkinter import ttk, Button, Label, Entry, StringVar
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
+                               QLabel, QLineEdit, QPushButton, QGroupBox, QSplitter)
+from PySide6.QtCore import Slot
+
+from hkws.base_adapter import BaseAdapter
 from hkws.core import env
 from hkws import cm_camera_adpt, config
 from example import instant_preview1_cb
-
-current_path = os.path.abspath(os.path.dirname(__file__))
-# split函数将路径分为目录和文件名，[0]取父目录
-root_path = os.path.split(current_path)[0]
-# 取根目录
-project_path = os.path.split(root_path)[0]
-# 添加这些路径到sys.path，使得Python能够导入这些路径下的模块。
-sys.path.append(root_path)
-sys.path.append(project_path)
 
 # 初始化配置文件
 cnf = config.Config()
@@ -36,89 +27,256 @@ if user_id < 0:
 print("Login successful,the user_id is ", user_id)
 
 
-# 实现云台控制
-def click_left():
-    adapter.ptz_control(lRealPlayHandle, 23, 0)
+class BallControlSystem(QMainWindow):
+    def __init__(self):
+        """
+        初始化布局和控件
+        """
+        super().__init__()
+        self.setWindowTitle("球机控制系统")
+        self.setGeometry(100, 100, 1000, 700)
+        self.lRealPlayHandle = None
+        self.is_logged_in = False
 
+        # 主窗口布局
+        main_widget = QWidget()
+        self.setCentralWidget(main_widget)
+        main_layout = QHBoxLayout(main_widget)
 
-def click_right():
-    adapter.ptz_control(lRealPlayHandle, 24, 0)
+        # 左右分割器
+        self.splitter = QSplitter()
+        main_layout.addWidget(self.splitter)
 
+        # 左侧功能区
+        left_widget = QWidget()
+        left_layout = QVBoxLayout(left_widget)
+        self.splitter.addWidget(left_widget)
 
-def click_up():
-    adapter.ptz_control(lRealPlayHandle, 21, 0)
+        # 右侧视频显示区
+        self.video_label = QLabel()
+        self.video_label.setStyleSheet("background-color: #333333;")
+        self.splitter.addWidget(self.video_label)
 
+        # 设置左右分割区域宽度
+        self.splitter.setSizes([240, 960])
 
-def click_down():
-    adapter.ptz_control(lRealPlayHandle, 22, 0)
+        # 设备配置模块
+        self.create_device_config(left_layout)
+        # 预览控制模块
+        self.create_preview_control(left_layout)
+        # 云台控制模块
+        self.create_ptz_control(left_layout)
 
+    def create_device_config(self, layout):
+        """
+        此函数实现设备配置组件
+        :param layout: 布局
+        :return:
+        """
+        group_box = QGroupBox("设备配置")
+        group_layout = QVBoxLayout(group_box)
 
-if __name__ == '__main__':
-    win = tkinter.Tk()
-    win.title("hikvision")
-    win.resizable(0, 0)
-    win.overrideredirect(True)
-    sw = win.winfo_screenwidth()
-    sh = win.winfo_screenheight()
-    ww = 800
-    wh = 650
-    x = (sw - ww) / 2
-    y = (sh - wh) / 2
-    win.geometry("%dx%d+%d+%d" % (ww, wh, x, y))
+        # 设备IP
+        self.ip_label = QLabel("设备IP:")
+        self.ip_edit = QLineEdit()
+        self.ip_edit.setPlaceholderText("Enter ip")
 
-    cv = tkinter.Canvas(win, bg='white', width=ww, height=wh)
-    cv.place(x=20, y=10)
+        # 调试用
+        self.ip_edit.setText("192.168.1.64")
 
-    hwnd = cv.winfo_id()
+        group_layout.addWidget(self.ip_label)
+        group_layout.addWidget(self.ip_edit)
 
-    # 创建按键
-    btn_left = Button(win, text="  左  ",
-                      command=click_left).place(x=100, y=530)
+        # 端口
+        self.port_label = QLabel("端口:")
+        self.port_edit = QLineEdit()
+        self.port_edit.setPlaceholderText("Enter port")
 
-    btn_right = Button(win, text="  右  ",
-                       command=click_right).place(x=180, y=530)
+        # 调试用
+        self.port_edit.setText("8000")
 
-    btn_top = Button(win, text="  上  ", command=click_up).place(x=145, y=495)
+        group_layout.addWidget(self.port_label)
+        group_layout.addWidget(self.port_edit)
 
-    btn_down = Button(win, text="  下  ",
-                      command=click_down).place(x=145, y=565)
+        # 用户名
+        self.user_label = QLabel("用户名:")
+        self.user_edit = QLineEdit()
+        self.user_edit.setPlaceholderText("Enter username")
 
-    lbl_ip = Label(win, text="IP地址", fg="#111").place(x=480, y=490)
+        # 调试用
+        self.user_edit.setText("admin")
 
-    ent_ip = Entry(win).place(x=550, y=490)
+        group_layout.addWidget(self.user_label)
+        group_layout.addWidget(self.user_edit)
 
-    lbl_port = Label(win, text="端口", fg="#111").place(x=480, y=515)
+        # 密码
+        self.pwd_label = QLabel("密码:")
+        self.pwd_edit = QLineEdit()
+        self.pwd_edit.setPlaceholderText("Enter password")
 
-    ent_port = Entry(win).place(x=550, y=515)
+        # 调试用
+        self.pwd_edit.setText("jqf64078")
 
-    lbl_name = Label(win, text="登录名", fg="#111").place(x=480, y=540)
+        self.pwd_edit.setEchoMode(QLineEdit.Password)  # 密文输入
+        group_layout.addWidget(self.pwd_label)
+        group_layout.addWidget(self.pwd_edit)
 
-    ent_name = Entry(win).place(x=550, y=540)
+        # 状态
+        self.status_label = QLabel("状态: 未登录")
+        group_layout.addWidget(self.status_label)
 
-    lbl_password = Label(win, text="密码", fg="#111").place(x=480, y=565)
+        # 登录按钮
+        self.login_btn = QPushButton("登录")
+        self.login_btn.setStyleSheet("background-color: #3498db; color: white; border: none; padding: 8px;")
+        self.login_btn.clicked.connect(self.on_login_clicked)
+        group_layout.addWidget(self.login_btn)
 
-    password = StringVar()
-    password_entry = ttk.Entry(
-        win,
-        textvariable=password,
-        show='*'
-    )
-    password_entry.place(x=550, y=565)
+        layout.addWidget(group_box)
 
-    btn_q = Button(win, text=' 退出 ', command=win.quit)
-    btn_q.place(x=660, y=610)
+    def create_preview_control(self, layout):
+        """
+        此函数实现预览组件
+        :param layout: 布局
+        :return:
+        """
+        group_box = QGroupBox("预览控制")  # 分组框组件
+        group_layout = QVBoxLayout(group_box)
 
-    # 启动实时预览
-    lRealPlayHandle = adapter.start_preview(hwnd, None, user_id)
-    if lRealPlayHandle < 0:
+        # 开始预览按钮 创建-设置格式-连接槽函数-设置布局
+        self.preview_btn = QPushButton("开始预览")
+        self.preview_btn.setStyleSheet("background-color: #3498db; color: white; border: none; padding: 8px;")
+        self.preview_btn.clicked.connect(self.on_preview_clicked)
+        group_layout.addWidget(self.preview_btn)
+
+        # 停止预览按钮
+        self.stop_preview_btn = QPushButton("停止预览")
+        self.stop_preview_btn.setStyleSheet("background-color: #ff0000; color: white; border: none; padding: 8px;")
+        self.stop_preview_btn.clicked.connect(self.on_stop_preview_clicked)
+        group_layout.addWidget(self.stop_preview_btn)
+
+        layout.addWidget(group_box)
+
+    def create_ptz_control(self, layout):
+        """
+        此函数实现云台控制组件
+        :param layout: 布局
+        :return:
+        """
+        group_box = QGroupBox("云台控制")
+        group_layout = QVBoxLayout(group_box)
+
+        # 上
+        self.up_btn = QPushButton("↑")
+        self.up_btn.setStyleSheet("background-color: #333333; color: white; border: none;")
+        # 连接槽函数
+        self.up_btn.clicked.connect(lambda: self.on_ptz_control(21))
+
+        # 下
+        self.down_btn = QPushButton("↓")
+        self.down_btn.setStyleSheet("background-color: #333333; color: white; border: none;")
+        self.down_btn.clicked.connect(lambda: self.on_ptz_control(22))
+
+        # 左
+        self.left_btn = QPushButton("←")
+        self.left_btn.setStyleSheet("background-color: #333333; color: white; border: none;")
+        self.left_btn.clicked.connect(lambda: self.on_ptz_control(23))
+
+        # 右
+        self.right_btn = QPushButton("→")
+        self.right_btn.setStyleSheet("background-color: #333333; color: white; border: none;")
+        self.right_btn.clicked.connect(lambda: self.on_ptz_control(24))
+
+        group_layout.addWidget(self.up_btn)
+        group_layout.addWidget(self.down_btn)
+        group_layout.addWidget(self.left_btn)
+        group_layout.addWidget(self.right_btn)
+
+        layout.addWidget(group_box)
+
+    def closeEvent(self, event):
+        """
+        处理窗口关闭事件
+        :param event:
+        :return: 事件
+        """
+        if self.lRealPlayHandle is not None:
+            adapter.stop_preview(self.lRealPlayHandle)
         adapter.logout(user_id)
         adapter.sdk_clean()
+        event.accept()
 
-    print("start preview 成功", lRealPlayHandle)
-    callback = adapter.callback_real_data(lRealPlayHandle, instant_preview1_cb.f_real_data_call_back, user_id)
-    print("callback", callback)
+    @Slot()
+    def on_login_clicked(self):
+        """
+        登录按钮槽函数
+        :return:
+        """
+        # 获取用户输入信息
+        ip = self.ip_edit.text()
+        port = self.port_edit.text()
+        user = self.user_edit.text()
+        pwd = self.pwd_edit.text()
 
-    win.mainloop()
-    adapter.stop_preview(lRealPlayHandle)
-    adapter.logout(user_id)
-    adapter.sdk_clean()
+        # 调用SDK登录方法，获取user_id
+        base_adapter = BaseAdapter()
+        user_id = base_adapter.login(ip, int(port), user, pwd)
+
+        # 处理状态栏文本
+        if user_id is not None and user_id >= 0:
+            self.is_logged_in = True
+            self.status_label.setText(f"状态: 已登录，用户ID: {user_id}")
+        else:
+            self.is_logged_in = False
+            self.status_label.setText("状态: 未登录")
+
+    @Slot()
+    def on_preview_clicked(self):
+        """
+        预览按钮槽函数，未登录状态不能进行预览
+        :return:
+        """
+        if not self.is_logged_in:
+            return
+        if self.lRealPlayHandle is None:
+            # 获取视频显示区域的句柄
+            hwnd = self.video_label.winId()
+            self.lRealPlayHandle = adapter.start_preview(hwnd, None, user_id)
+            if self.lRealPlayHandle < 0:
+                logging.error("启动预览失败")
+                return
+            print("start preview 成功", self.lRealPlayHandle)
+            self.status_label.setText("状态: 预览已开始")
+            # 注册回调函数
+            callback = adapter.callback_real_data(self.lRealPlayHandle, instant_preview1_cb.f_real_data_call_back,
+                                                  user_id)
+            print("callback", callback)
+
+    def on_stop_preview_clicked(self):
+        """
+        停止预览按钮槽函数
+        :return:
+        """
+        if self.lRealPlayHandle is not None:
+            adapter.stop_preview(self.lRealPlayHandle)
+            self.lRealPlayHandle = None
+            self.status_label.setText("状态: 预览已停止")
+            self.video_label.setStyleSheet("background-color: #333333;")
+
+    @Slot(int)
+    def on_ptz_control(self, dwPTZCommand):
+        """
+        云台控制槽函数，未登录或未预览不能进行云台控制
+        :param dwPTZCommand: 云台控制命令
+        :return:
+        """
+        if not self.is_logged_in or self.lRealPlayHandle is None:
+            return
+
+        adapter.ptz_control(self.lRealPlayHandle, dwPTZCommand, 0)
+
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = BallControlSystem()
+    window.show()
+    sys.exit(app.exec())
