@@ -162,8 +162,14 @@ class CameraAdapter(BaseAdapter):
             self.print_error("NET_DVR_SetDVRConfig 启动预览失败: the error code is ")
         return set_dvr_result
 
-    # todo:云台控制函数
     def ptz_control(self, lRealPlayHandle, dwPTZCommand, dwStop):
+        """
+        云台控制函数
+        :param lRealPlayHandle: 预览句柄
+        :param dwPTZCommand: 云台控制命令
+        :param dwStop: 云台停止动作或开始动作：0－开始，1－停止
+        :return: True or False
+        """
         self.lRealHandle = lRealPlayHandle
         self.dwPTZCommand = dwPTZCommand
         self.dwStop = dwStop

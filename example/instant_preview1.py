@@ -1,25 +1,25 @@
-# 直接传入窗口句柄，时效性最高，但是数据无法操作
-import logging  # 记录日志
-import os  # 操作文件和路径
-import sys  # 与Python解释器和系统交
-import tkinter  # 创建图形用户界面（GUI）的标准库
+"""
+实时预览
+"""
+import logging
+import os
+import sys
+import tkinter
 from tkinter import ttk, Button, Label, Entry, StringVar
 from hkws.core import env
 from hkws import cm_camera_adpt, config
 from example import instant_preview1_cb
 
-# 获取当前脚本的目录
-curPath = os.path.abspath(os.path.dirname(__file__))
+current_path = os.path.abspath(os.path.dirname(__file__))
 # split函数将路径分为目录和文件名，[0]取父目录
-rootPath = os.path.split(curPath)[0]
+root_path = os.path.split(current_path)[0]
 # 取根目录
-PathProject = os.path.split(rootPath)[0]
+project_path = os.path.split(root_path)[0]
 # 添加这些路径到sys.path，使得Python能够导入这些路径下的模块。
-sys.path.append(rootPath)
-sys.path.append(PathProject)
+sys.path.append(root_path)
+sys.path.append(project_path)
 
 # 初始化配置文件
-# 创建Config类对象cnf，使用对象cnf调用Config类中的方法和属性
 cnf = config.Config()
 path = os.path.join('../local_config.ini')
 cnf.init_config(path)  # 初始化配置文件路径
@@ -29,12 +29,11 @@ if env.is_windows():
 
 # 初始化SDK适配器
 adapter = cm_camera_adpt.CameraAdapter()
-userId = adapter.common_start(cnf)
-if userId < 0:
+user_id = adapter.common_start(cnf)
+if user_id < 0:
     logging.error("初始化Adapter失败")
-    os._exit(0)
 
-print("Login successful,the user_id is ", userId)
+print("Login successful,the user_id is ", user_id)
 
 
 # 实现云台控制
@@ -106,24 +105,20 @@ if __name__ == '__main__':
     )
     password_entry.place(x=550, y=565)
 
-    # separator = ttk.Separator(win, orient='horizontal')
-    # separator.place(x=10, y=600, width=790)
-
     btn_q = Button(win, text=' 退出 ', command=win.quit)
     btn_q.place(x=660, y=610)
 
     # 启动实时预览
-    lRealPlayHandle = adapter.start_preview(hwnd, None, userId)
+    lRealPlayHandle = adapter.start_preview(hwnd, None, user_id)
     if lRealPlayHandle < 0:
-        adapter.logout(userId)
+        adapter.logout(user_id)
         adapter.sdk_clean()
-        os._exit(2)
 
     print("start preview 成功", lRealPlayHandle)
-    callback = adapter.callback_real_data(lRealPlayHandle, instant_preview1_cb.f_real_data_call_back, userId)
+    callback = adapter.callback_real_data(lRealPlayHandle, instant_preview1_cb.f_real_data_call_back, user_id)
     print("callback", callback)
 
     win.mainloop()
     adapter.stop_preview(lRealPlayHandle)
-    adapter.logout(userId)
+    adapter.logout(user_id)
     adapter.sdk_clean()

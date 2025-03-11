@@ -1,5 +1,5 @@
 """
-此文件用于定义基础结构体
+此文件用于结构体定义
 """
 from hkws.core.const import *
 from hkws.core.type_map import *
@@ -233,18 +233,4 @@ class NET_DVR_SDKABL(Structure):
         ("dwMaxVoiceComNum", h_DWORD),  # 最大语音转发的路数
         ("dwMaxBroadCastNum", h_DWORD),  # 最大语音广播的路数
         (" dwRes", h_DWORD * 10),  # 保留，置为0
-    ]
-
-# todo
-class NET_DVR_PTZControl(Structure):
-    """
-    云台控制参数结构体
-    lRealHandle: 当前预览句柄，NET_DVR_RealPlay或NET_DVR_RealPlay_V30的返回值
-    dwPTZCommand: 云台控制命令
-    dwStop: 云台停止动作或开始动作：0－开始，1－停止
-    """
-    _fields_ = [
-        ("lRealHandle", h_LONG),
-        ("dwPTZCommand", h_DWORD),
-        ("dwStop", h_DWORD),
     ]
