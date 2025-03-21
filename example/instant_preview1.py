@@ -5,6 +5,11 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                                QLabel, QLineEdit, QPushButton, QGroupBox, QSplitter)
 from PySide6.QtCore import Slot
 
+# 添加自定义模块路径
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_DIR)
+
+# 导入自定义模块hkws
 from hkws.base_adapter import BaseAdapter
 from hkws.core import env
 from hkws import cm_camera_adpt, config
@@ -20,7 +25,7 @@ if env.is_windows():
 
 # 初始化SDK适配器
 adapter = cm_camera_adpt.CameraAdapter()
-user_id = adapter.common_start(cnf)
+user_id = adapter.common_start(cnf)  # 获取用户id
 if user_id < 0:
     logging.error("初始化Adapter失败")
 
@@ -217,9 +222,9 @@ class BallControlSystem(QMainWindow):
         user = self.user_edit.text()
         pwd = self.pwd_edit.text()
 
-        # 调用SDK登录方法，获取user_id
-        base_adapter = BaseAdapter()
-        user_id = base_adapter.login(ip, int(port), user, pwd)
+        # # 调用SDK登录方法，获取user_id
+        # base_adapter = BaseAdapter()
+        # user_id = base_adapter.login(ip, int(port), user, pwd)
 
         # 处理状态栏文本
         if user_id is not None and user_id >= 0:
