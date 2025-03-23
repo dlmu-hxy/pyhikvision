@@ -129,15 +129,16 @@ class BaseAdapter:
         result = self.call_cpp("NET_DVR_Cleanup")
         logging.info("释放资源", result)
 
-    def login(self, address="192.168.1.64", port=8000, user="admin", pwd="jqf64078"):
+    def login(self, address="192.168.1.64", port='8000', user="admin", pwd="jqf64078"):
         """
         设备登陆
         :param address: ip地址
         :param port: 端口号
         :param user: 用户名
         :param pwd: 密码
-        :return:
+        :return: 用户id,id>0表示登录成功
         """
+
         # 设置网络连接超时时间和连接尝试次数
         set_overtime = self.call_cpp("NET_DVR_SetConnectTime", 5000, 4)
         if not set_overtime:

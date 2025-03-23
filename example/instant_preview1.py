@@ -1,16 +1,20 @@
 import sys
 import logging
 import os
+
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
                                QLabel, QLineEdit, QPushButton, QGroupBox, QSplitter)
-from PySide6.QtCore import Slot
+from PySide6.QtCore import (Slot, Signal, QObject)
+
+# 通信相关
+import socket
+from threading import Thread
 
 # 添加自定义模块路径
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
 
 # 导入自定义模块hkws
-from hkws.base_adapter import BaseAdapter
 from hkws.core import env
 from hkws import cm_camera_adpt, config
 from example import instant_preview1_cb
@@ -25,11 +29,41 @@ if env.is_windows():
 
 # 初始化SDK适配器
 adapter = cm_camera_adpt.CameraAdapter()
-user_id = adapter.common_start(cnf)  # 获取用户id
+# 获取用户id
+user_id = adapter.common_start(cnf)
 if user_id < 0:
     logging.error("初始化Adapter失败")
 
 print("Login successful,the user_id is ", user_id)
+
+
+class UDPServer(QObject):
+    """
+    UDP通信类
+    """
+    command_received = Signal(str, tuple)
+
+    def __init__(self):
+        super().__init__()
+        IP = "0.0.0.0"
+        PORT = 5000
+        # 实例化socket对象，指定协议类型为UDP
+        self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        # 绑定服务器IP和端口
+        self.sock.bind(('0.0.0.0', PORT))
+        self.running = True
+
+    def start(self):
+        Thread(target=self._listen, daemon=True).start()
+
+    def _listen(self):
+        while self.running:
+            data, addr = self.sock.recvfrom(1024)
+            self.command_received.emit(data.decode(), addr)
+
+    def stop(self):
+        self.running = False
+        self.sock.close()
 
 
 class BallControlSystem(QMainWindow):
@@ -42,6 +76,11 @@ class BallControlSystem(QMainWindow):
         self.setGeometry(100, 100, 1000, 700)
         self.lRealPlayHandle = None
         self.is_logged_in = False
+
+        # 通信相关
+        self.udp_server = UDPServer()
+        self.udp_server.command_received.connect(self.handle_command)
+        self.udp_server.start()
 
         # 主窗口布局
         main_widget = QWidget()
@@ -208,6 +247,7 @@ class BallControlSystem(QMainWindow):
             adapter.stop_preview(self.lRealPlayHandle)
         adapter.logout(user_id)
         adapter.sdk_clean()
+        self.udp_server.stop()
         event.accept()
 
     @Slot()
@@ -221,10 +261,6 @@ class BallControlSystem(QMainWindow):
         port = self.port_edit.text()
         user = self.user_edit.text()
         pwd = self.pwd_edit.text()
-
-        # # 调用SDK登录方法，获取user_id
-        # base_adapter = BaseAdapter()
-        # user_id = base_adapter.login(ip, int(port), user, pwd)
 
         # 处理状态栏文本
         if user_id is not None and user_id >= 0:
@@ -278,6 +314,64 @@ class BallControlSystem(QMainWindow):
             return
 
         adapter.ptz_control(self.lRealPlayHandle, dwPTZCommand, 0)
+
+    def handle_command(self, cmd: str, addr: tuple):
+        """
+        处理命令
+        :param cmd: 命令
+        :param addr: 地址
+        :return:
+        """
+        parts = cmd.split()  # 分割命令
+        response = '错误的命令'
+        try:
+            # 登录命令
+            if (parts[0] == 'login' and len(parts) == 5):
+                # 格式：login [IP] [PORT] [USER] [PWD]
+                ip, port, user, pwd = parts[1:]
+                user_id = adapter.login(ip, int(port), user, pwd)
+
+                if user_id is not None and user_id >= 0:
+                    response = 'OK: login success'
+                    self.is_logged_in = True
+                else:
+                    response = 'ERROR: login failed'
+
+            # 启动预览命令
+            elif (parts[0] == 'start_preview'):
+                if self.is_logged_in:
+                    self.on_preview_clicked()
+                    response = 'OK: preview success'
+                else:
+                    response = 'ERROR: preview failed'
+
+            # 停止预览命令
+            elif (parts[0] == 'stop_preview'):
+                if self.is_logged_in and self.lRealPlayHandle is not None:
+                    self.on_stop_preview_clicked()
+                    response = 'OK: preview stopped'
+                else:
+                    response = 'ERROR: stop_preview failed'
+
+            # 云台控制命令
+            elif (parts[0] == 'ptz'):
+                direction_map = {
+                    "up": 21, "down": 22,
+                    "left": 23, "right": 24
+                }
+                if self.is_logged_in and self.lRealPlayHandle is not None:
+                    if parts[1] in direction_map:
+                        self.on_ptz_control(direction_map[parts[1]])
+                        response = f"OK: ptz {parts[1]}"
+                    else:
+                        response = "ERROR: cmd not in direction_map"
+                else:
+                    response = "ERROR: ptz failed"
+
+            self.udp_server.sock.sendto(response.encode(), addr)
+
+        except Exception as e:
+            self.udp_server.sock.sendto(str(e).encode(), addr)
 
 
 if __name__ == "__main__":

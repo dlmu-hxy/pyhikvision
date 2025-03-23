@@ -9,7 +9,7 @@ class Config:
     sdk_path = ""
     user = "admin"
     password = "jqf64078"
-    port = 8000
+    port = '8000'
     ip = "192.168.1.64"
     suffix = ".so"
 
